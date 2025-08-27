@@ -30,6 +30,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,7 +91,8 @@ fun ButtonImportMedia() {
 }
 
 @Composable
-fun VideoPlayer(uri: Uri) {
+@OptIn(UnstableApi::class)
+private fun VideoPlayer(uri: Uri) {
     val context = LocalContext.current
 
     val player = remember(uri) {
