@@ -32,8 +32,14 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.SeekParameters
+import kotlin.math.abs
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,7 +107,7 @@ private fun VideoPlayer(uri: Uri) {
         ExoPlayer.Builder(context.applicationContext).build().apply {
             setMediaItem(MediaItem.fromUri(uri))
             prepare()
-            playWhenReady = true
+            setSeekParameters(SeekParameters.EXACT)
         }
     }
 
@@ -115,15 +121,31 @@ private fun VideoPlayer(uri: Uri) {
         player.pause()
         player.seekTo((player.currentPosition + singleFrameTime).toLong())
     }
+    // Move Video 1 Frame Back
     fun PreviousFrame() {
         player.pause()
         player.seekTo((player.currentPosition - singleFrameTime).toLong())
     }
 
+    // Initialize Variables to for Frame Marker Positions
+    var markerone by remember {mutableStateOf(0L)}
+    var markertwo by remember {mutableStateOf(0L)}
+
+    // Custom Play / Pause Button
+    fun cPlayPause() {
+        if (player.isPlaying) {
+            player.pause()
+        } else {
+            player.play()
+        }
+    }
+
 
 
     // UI Elements
-    Column {
+    Column (
+        modifier = Modifier.fillMaxSize()
+    ){
         Row(
             modifier = Modifier
                 .fillMaxWidth(),
@@ -133,7 +155,7 @@ private fun VideoPlayer(uri: Uri) {
             ElevatedButton(onClick = {PreviousFrame()}) {
                 Text("-1 Frame")
             }
-            ElevatedButton(onClick = {player.play()}) {
+            ElevatedButton(onClick = {cPlayPause()}) {
                 Text("Play")
             }
             ElevatedButton(onClick = {NextFrame()}) {
@@ -145,31 +167,36 @@ private fun VideoPlayer(uri: Uri) {
             modifier = Modifier
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.Center
         ) {
-            ElevatedButton(onClick = {}) {
-                Text("Frame Marker 1")
+            ElevatedButton(onClick = { markerone = player.currentPosition }) {
+                Text("Frame Mark 1")
             }
-            Text("Frame Difference: ")
-            ElevatedButton(onClick = {}) {
-                Text("Frame Marker 2")
+
+            Text("Time: ${abs(markertwo - markerone)} MS")
+
+            ElevatedButton(onClick = {markertwo = player.currentPosition}) {
+                Text("Frame Mark 2")
             }
 
         }
 
+        Spacer(modifier = Modifier.height(40.dp))
+
         AndroidView(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .aspectRatio(9 / 16f),
             factory = { context ->
                 PlayerView(context).apply {
                     setShowPreviousButton(false)
                     setShowNextButton(false)
+                    controllerAutoShow = false
+                    useController = true
                 } },
             update  = { it.player = player }
         )
     }
-
 
     DisposableEffect(player) {
         onDispose { player.release() }
