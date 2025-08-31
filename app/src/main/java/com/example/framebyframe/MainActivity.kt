@@ -31,6 +31,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.annotation.OptIn
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.media3.common.util.UnstableApi
 
 class MainActivity : ComponentActivity() {
@@ -87,7 +89,6 @@ fun ButtonImportMedia() {
     videoUri?.let { uri ->
         VideoPlayer(uri)
     }
-
 }
 
 @Composable
@@ -95,25 +96,80 @@ fun ButtonImportMedia() {
 private fun VideoPlayer(uri: Uri) {
     val context = LocalContext.current
 
+    // ExoPlayer
     val player = remember(uri) {
         ExoPlayer.Builder(context.applicationContext).build().apply {
             setMediaItem(MediaItem.fromUri(uri))
             prepare()
-            play()
+            playWhenReady = true
         }
     }
 
-    AndroidView(
-        modifier = Modifier
-            .fillMaxSize()
-            .aspectRatio(9 / 16f),
-        factory = { context ->
-            PlayerView(context).apply {
-                setShowPreviousButton(false)
-                setShowNextButton(false)
-            } },
-        update  = { it.player = player }
-    )
+    // Frame Stepping Logic
+    // Obtain Video Frame Rate
+    val fps = player.videoFormat?.frameRate ?: 30f
+    val singleFrameTime: Float = 1000 / fps
+
+    // Move Video 1 Frame Forward
+    fun NextFrame() {
+        player.pause()
+        player.seekTo((player.currentPosition + singleFrameTime).toLong())
+    }
+    fun PreviousFrame() {
+        player.pause()
+        player.seekTo((player.currentPosition - singleFrameTime).toLong())
+    }
+
+
+
+    // UI Elements
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            ElevatedButton(onClick = {PreviousFrame()}) {
+                Text("-1 Frame")
+            }
+            ElevatedButton(onClick = {player.play()}) {
+                Text("Play")
+            }
+            ElevatedButton(onClick = {NextFrame()}) {
+                Text("+1 Frame")
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            ElevatedButton(onClick = {}) {
+                Text("Frame Marker 1")
+            }
+            Text("Frame Difference: ")
+            ElevatedButton(onClick = {}) {
+                Text("Frame Marker 2")
+            }
+
+        }
+
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize()
+                .aspectRatio(9 / 16f),
+            factory = { context ->
+                PlayerView(context).apply {
+                    setShowPreviousButton(false)
+                    setShowNextButton(false)
+                } },
+            update  = { it.player = player }
+        )
+    }
+
 
     DisposableEffect(player) {
         onDispose { player.release() }
