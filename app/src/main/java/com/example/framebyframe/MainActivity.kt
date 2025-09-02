@@ -36,6 +36,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.SeekParameters
 import kotlin.math.abs
@@ -101,6 +104,7 @@ fun ButtonImportMedia() {
 @OptIn(UnstableApi::class)
 private fun VideoPlayer(uri: Uri) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // ExoPlayer
     val player = remember(uri) {
@@ -198,7 +202,26 @@ private fun VideoPlayer(uri: Uri) {
         )
     }
 
-    DisposableEffect(player) {
-        onDispose { player.release() }
+
+
+    DisposableEffect(lifecycleOwner, player) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    player.pause()
+                }
+                Lifecycle.Event.ON_DESTROY -> {
+                    player.release()
+                }
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            player.release()
+        }
     }
 }
